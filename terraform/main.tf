@@ -44,3 +44,17 @@ module "nat_gateway" {
   public_subnet_id   = module.subnet.public_subnet_ids[0]
   private_subnet_ids = module.subnet.private_subnet_ids
 }
+
+module "elasticache" {
+  source      = "./modules/elasticache"
+  name_prefix = "${var.team_name}-ng"
+  environment = "dev"
+  vpc_id      = module.vpc.vpc_id
+  subnet_ids  = module.subnet.private_subnet_ids
+  # allowed_sg_ids = [ module.eks.workernode_sg_id ] eks 워커노드 sg
+  allowed_sg_ids     = [""]
+  engine_version     = "7.1"
+  node_type          = "cache.r5.large"
+  preferred_azs      = ["ap-northeast-2a", "ap-northeast-2c"]
+  number_of_replicas = 2
+}
