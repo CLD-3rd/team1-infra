@@ -66,7 +66,7 @@ module "rds" {
   tags                 = "var.tags"
 
   private_subnet_ids   = module.subnet.private_subnet_ids
-  db_security_group_id = module.elasticache.allowed_sg_ids
+  db_security_group_id = 
 
   allocated_storage    = 20
   engine               = "mysql"
