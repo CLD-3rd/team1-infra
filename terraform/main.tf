@@ -58,3 +58,21 @@ module "elasticache" {
   preferred_azs      = ["ap-northeast-2a", "ap-northeast-2c"]
   number_of_replicas = 2
 }
+
+module "rds" {
+  source               = "./modules/rds"
+  name_prefix          = "${var.team_name}-mysql"
+  environment          = "dev"
+  tags                 = "var.tags"
+
+  private_subnet_ids   = module.subnet.private_subnet_ids
+  db_security_group_id = module.elasticache.allowed_sg_ids
+
+  allocated_storage    = 20
+  engine               = "mysql"
+  engine_version       = "8.0"
+  instance_class       = "db.t3.micro"
+  username             = "root"
+  password             = "root123"
+  db_name              = "jazzlpdb"
+}
