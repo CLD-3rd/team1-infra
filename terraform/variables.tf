@@ -2,6 +2,7 @@ variable "team_name" {
   description = "Name of team name"
   type        = string
   default     = "team1"
+<<<<<<< HEAD
 }
 
 variable "aws_region" {
@@ -88,4 +89,7 @@ variable "environment" {
   description = "Deployment environment"
   type        = string
   default     = "dev"
+=======
+
+>>>>>>> 32c994119b640135a73c54950350dfe706de402c
 }
