@@ -4,7 +4,7 @@ provider "aws" {
 
 # EKS 클러스터 IAM 역할
 resource "aws_iam_role" "eks_cluster_role" {
-  name = "${var.team_name}-eks-cluster-role" 
+  name = "${var.team_name}-eks-cluster-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -126,7 +126,7 @@ module "elasticache" {
   name_prefix = "${var.team_name}-ng"
   environment = "dev"
   vpc_id      = module.vpc.vpc_id
-  subnet_ids  = module.subnet.private_subnet_ids
+  subnet_ids  = module.subnet.private_subnet_ids_data
   # allowed_sg_ids = [ module.eks.workernode_sg_id ] eks 워커노드 sg
   allowed_sg_ids     = [""]
   engine_version     = "7.1"
@@ -142,8 +142,8 @@ module "eks" {
   environment = "dev"
   # EKS 클러스터가 사용할 IAM 역할 ARN을 지정해야 합니다.
   # 예: aws_iam_role.eks_cluster_role.arn
-  cluster_iam_role_arn = aws_iam_role.eks_cluster_role.arn # EKS 클러스터 IAM 역할 ARN 연결
-  subnet_ids           = module.subnet.private_subnet_ids  # EKS 클러스터는 Private Subnet에 배포
+  cluster_iam_role_arn = aws_iam_role.eks_cluster_role.arn    # EKS 클러스터 IAM 역할 ARN 연결
+  subnet_ids           = module.subnet.private_subnet_ids_app # EKS 클러스터는 Private Subnet에 배포
   # cluster_security_group_ids = [aws_security_group.eks_cluster_sg.id] # 필요시 EKS 클러스터 보안 그룹 지정
 }
 
@@ -155,6 +155,6 @@ module "eks_node_group" {
   cluster_name = module.eks.cluster_name
   # EKS 노드 그룹이 사용할 IAM 역할 ARN을 지정해야 합니다.
   # 예: aws_iam_role.eks_node_role.arn
-  node_role_arn = aws_iam_role.eks_node_role.arn   # EKS 노드 그룹 IAM 역할 ARN 연결
-  subnet_ids    = module.subnet.private_subnet_ids # 노드 그룹은 Private Subnet에 배포
+  node_role_arn = aws_iam_role.eks_node_role.arn       # EKS 노드 그룹 IAM 역할 ARN 연결
+  subnet_ids    = module.subnet.private_subnet_ids_app # 노드 그룹은 Private Subnet에 배포
 }
