@@ -4,31 +4,31 @@ provider "aws" {
 
 module "vpc" {
   source      = "./modules/network/vpc"
-  name_prefix = "${var.team_name}-vpc"
+  name_prefix = var.team_name
   environment = "dev"
   vpc_cidr    = "10.0.0.0/16"
 }
 
 module "subnet" {
   source               = "./modules/network/subnet"
-  name_prefix          = "${var.team_name}-subnet"
+  name_prefix          = var.team_name
   environment          = "dev"
   vpc_id               = module.vpc.vpc_id
   public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
-  private_subnet_cidrs = ["10.0.3.0/24", "10.0.4.0/24"]
+  private_subnet_cidrs = ["10.0.3.0/24", "10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
   azs                  = ["ap-northeast-2a", "ap-northeast-2c"]
 }
 
 module "internet_gateway" {
   source      = "./modules/network/internet-gateway"
-  name_prefix = "${var.team_name}-ig"
+  name_prefix = var.team_name
   environment = "dev"
   vpc_id      = module.vpc.vpc_id
 }
 
 module "route_table" {
   source            = "./modules/network/route-table"
-  name_prefix       = "${var.team_name}-rt"
+  name_prefix       = var.team_name
   environment       = "dev"
   vpc_id            = module.vpc.vpc_id
   igw_id            = module.internet_gateway.igw_id
@@ -37,7 +37,7 @@ module "route_table" {
 
 module "nat_gateway" {
   source             = "./modules/network/nat-gateway"
-  name_prefix        = "${var.team_name}-ng"
+  name_prefix        = var.team_name
   environment        = "dev"
   vpc_id             = module.vpc.vpc_id
   igw_id             = module.internet_gateway.igw_id
