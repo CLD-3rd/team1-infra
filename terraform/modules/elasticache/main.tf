@@ -27,6 +27,10 @@ resource "aws_elasticache_subnet_group" "redis" {
   name        = "${var.name_prefix}-redis-subnet-group"
   description = "Redis subnet group"
   subnet_ids  = var.subnet_ids
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_elasticache_replication_group" "redis" {
