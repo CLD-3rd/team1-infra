@@ -268,3 +268,11 @@ module "eks_node_sg" {
     }
   ]
 }
+
+module "dynamodb" {
+  source         = "./modules/dynamodb"
+  name_prefix    = var.team_name
+  environment    = "dev"
+  hash_key       = "album_id"
+  hash_key_type  = "S"
+}
