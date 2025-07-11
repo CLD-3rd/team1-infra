@@ -28,3 +28,9 @@ variable "ec2_key_name" {
   type        = string
   default     = ""
 }
+
+variable "rds_password" {
+  type        = string
+  description = "RDS 비밀번호"
+  sensitive   = true
+}
