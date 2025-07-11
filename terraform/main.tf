@@ -289,6 +289,16 @@ module "dynamodb" {
   hash_key_type = "S"
 }
 
+module "ecr" {
+  source          = "./modules/ecr"
+  repository_name = "${var.team_name}-app-repo" 
+  environment     = var.environment
+  tags = {
+    Name        = "${var.team_name}-app-repo"
+    Environment = var.environment
+  }
+}
+
 module "s3" {
   source            = "./modules/s3"
   name_prefix       = var.team_name
