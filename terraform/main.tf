@@ -296,3 +296,4 @@ module "s3" {
   enable_versioning = true
   allow_public_read = true
 }
+
