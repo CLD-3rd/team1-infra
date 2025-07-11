@@ -207,3 +207,84 @@ module "ec2" {
   key_name           = var.ec2_key_name
   tags               = {}
 }
+
+#RDS
+module "rds" {
+  source             = "./modules/rds"
+  name_prefix        = var.team_name
+  environment        = "dev"
+  private_subnet_ids = module.subnet.private_subnet_ids
+  security_group_id  = module.rds_sg.security_group_id
+
+  db_name  = "team1db"
+  username = "admin"
+  password = var.rds_password
+}
+
+#RDS 보안그룹
+module "rds_sg" {
+  source      = "./modules/security-group"
+  name_prefix = var.team_name
+  sg_name     = "rds"
+  description = "Allow MySQL from EKS Node or Bastion"
+  vpc_id      = module.vpc.vpc_id
+  environment = "dev"
+
+  ingress_rules = [
+    {
+      from_port       = 3306
+      to_port         = 3306
+      protocol        = "tcp"
+      security_groups = [module.eks_node_sg.security_group_id] # EKS에서만 접근 허용
+      description     = "Allow MySQL from EKS nodes"
+    }
+  ]
+
+  egress_rules = [
+    {
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = ["0.0.0.0/0"]
+      description = "Allow all outbound traffic"
+    }
+  ]
+
+}
+#eks node 보안그룹
+module "eks_node_sg" {
+  source      = "./modules/security-group"
+  name_prefix = var.team_name
+  sg_name     = "eks-node"
+  description = "EKS Node SG"
+  vpc_id      = module.vpc.vpc_id
+  environment = "dev"
+
+  ingress_rules = [
+    {
+      from_port   = 1025
+      to_port     = 65535
+      protocol    = "tcp"
+      cidr_blocks = ["10.0.0.0/16"]
+      description = "Allow high ports for internal traffic"
+    }
+  ]
+
+  egress_rules = [
+    {
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = ["0.0.0.0/0"]
+      description = "Allow all outbound"
+    }
+  ]
+}
+
+module "dynamodb" {
+  source         = "./modules/dynamodb"
+  name_prefix    = var.team_name
+  environment    = "dev"
+  hash_key       = "album_id"
+  hash_key_type  = "S"
+}
