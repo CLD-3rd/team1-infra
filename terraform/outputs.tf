@@ -7,7 +7,7 @@ output "redis_port" {
 }
 
 output "rds_endpoint" {
-  value = module.rds.rds_endpoint
+  value     = module.rds.rds_endpoint
   sensitive = true
 }
 

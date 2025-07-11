@@ -29,7 +29,7 @@ data "aws_eks_cluster_auth" "cluster" {
 
 resource "aws_iam_openid_connect_provider" "oidc" {
   client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = ["9e99a48a9960b14926bb7f3b02e22da0ecd4e9b5"]  # AWS 기본 thumbprint
+  thumbprint_list = ["9e99a48a9960b14926bb7f3b02e22da0ecd4e9b5"] # AWS 기본 thumbprint
   url             = data.aws_eks_cluster.cluster.identity[0].oidc[0].issuer
 }
 
@@ -39,7 +39,7 @@ resource "aws_iam_role" "alb_sa_role" {
 }
 
 resource "aws_iam_policy" "alb_policy" {
-  name   = "${var.cluster_name}-alb-controller-policy"  
+  name   = "${var.cluster_name}-alb-controller-policy"
   policy = file("${path.module}/iam_policy.json")
 }
 
