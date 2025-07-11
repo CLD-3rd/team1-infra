@@ -1,4 +1,3 @@
-# EKS Cluster Resource
 resource "aws_eks_cluster" "this" {
   name     = "${var.name_prefix}-eks-cluster"
   version  = var.kubernetes_version
