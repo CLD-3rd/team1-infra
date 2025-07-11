@@ -17,3 +17,7 @@ output "redis_subnet_group_name" {
   description = "Redis subnet group name"
   value       = aws_elasticache_subnet_group.redis.name
 }
+
+output "redis_port" {
+  value = aws_elasticache_replication_group.redis.port
+}
