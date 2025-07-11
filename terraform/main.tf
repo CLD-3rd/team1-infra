@@ -180,7 +180,7 @@ module "eks_node_group" {
 # EC2 인스턴스에 적용할 보안 그룹
 resource "aws_security_group" "ec2_sg" {
   name        = "${var.team_name}-ec2-sg"
-  description = "Allow HTTP/SSH traffic to EC2"
+  description = "EC2 인스턴스에 대한 HTTP/SSH 트래픽 허용"
   vpc_id      = module.vpc.vpc_id
 
   ingress {
@@ -322,3 +322,12 @@ module "s3" {
   allow_public_read = true
 }
 
+output "private_key" {
+  value     = tls_private_key.this.private_key_pem
+  sensitive = true
+}
+
+output "ec2_public_ip" {
+  description = "Public IP address of the EC2 instance"
+  value       = module.ec2.public_ip
+}
