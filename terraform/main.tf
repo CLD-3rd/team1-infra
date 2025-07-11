@@ -180,7 +180,7 @@ module "eks_node_group" {
 # EC2 인스턴스에 적용할 보안 그룹
 resource "aws_security_group" "ec2_sg" {
   name        = "${var.team_name}-ec2-sg"
-  description = "EC2 인스턴스에 대한 HTTP/SSH 트래픽 허용"
+  description = "Allow HTTP and SSH traffic to EC2 instances"
   vpc_id      = module.vpc.vpc_id
 
   ingress {
