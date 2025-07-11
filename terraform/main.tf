@@ -2,6 +2,21 @@ provider "aws" {
   region = "ap-northeast-2"
 }
 
+resource "tls_private_key" "this" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "this" {
+  key_name   = "${var.team_name}-key-pair"
+  public_key = tls_private_key.this.public_key_openssh
+
+  tags = {
+    Name        = "${var.team_name}-key-pair"
+    Environment = var.environment
+  }
+}
+
 resource "aws_iam_role" "eks_cluster_role" {
   name = "${var.team_name}-eks-cluster-role"
 
@@ -158,7 +173,7 @@ module "eks_node_group" {
   # 예: aws_iam_role.eks_node_role.arn
   node_role_arn                           = aws_iam_role.eks_node_role.arn   # EKS 노드 그룹 IAM 역할 ARN 연결
   subnet_ids                              = module.subnet.private_subnet_ids # 노드 그룹은 Private Subnet에 배포
-  ssh_key_name                            = var.ec2_key_name
+  ssh_key_name                            = aws_key_pair.this.key_name
   remote_access_source_security_group_ids = [aws_security_group.ec2_sg.id]
 }
 
@@ -204,7 +219,7 @@ module "ec2" {
   instance_type      = var.ec2_instance_type
   subnet_id          = module.subnet.public_subnet_ids[0] # 퍼블릭 서브넷에 배포
   security_group_ids = [aws_security_group.ec2_sg.id]
-  key_name           = var.ec2_key_name
+  key_name           = aws_key_pair.this.key_name
   tags               = {}
 }
 
