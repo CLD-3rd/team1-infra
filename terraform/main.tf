@@ -331,3 +331,57 @@ output "ec2_public_ip" {
   description = "Public IP address of the EC2 instance"
   value       = module.ec2.public_ip
 }
+
+// alb 모듈
+module "alb" {
+  source             = "./modules/alb"
+  name_prefix        = var.team_name
+  environment        = "dev"
+  vpc_id             = module.vpc.vpc_id
+  public_subnet_ids  = module.subnet.public_subnet_ids
+  security_group_id  = module.alb_sg.security_group_id
+  target_port        = 80
+}
+
+//alb sg
+module "alb_sg" {
+  source      = "./modules/security-group"
+  name_prefix = var.team_name
+  sg_name     = "alb"
+  description = "Security group for ALB"
+  vpc_id      = module.vpc.vpc_id
+  environment = "dev"
+
+  ingress_rules = [
+    {
+      from_port   = 80
+      to_port     = 80
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+      description = "Allow HTTP from anywhere"
+    },
+    {
+      from_port   = 443
+      to_port     = 443
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+      description = "Allow HTTPS from anywhere"
+    }
+  ]
+
+  egress_rules = [
+    {
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = ["0.0.0.0/0"]
+      description = "Allow all outbound"
+    }
+  ]
+}
+
+// alb iam 정책
+module "iam_alb_controller" {
+  source        = "./modules/iam_alb_controller"
+  cluster_name  = "team1-eks-cluster"
+}
