@@ -13,3 +13,40 @@ output "rds_endpoint" {
 output "rds_port" {
   value = module.rds.rds_port
 }
+
+output "vpc_id" {
+  value = module.vpc.vpc_id
+}
+
+output "public_subnet_ids" {
+  value = module.subnet.public_subnet_ids
+}
+
+output "cluster_name" {
+  value = module.eks.cluster_name
+}
+
+output "oidc_provider_url" {
+  value = module.eks.oidc_provider
+}
+
+output "oidc_provider_arn" {
+  value = module.eks.oidc_provider_arn
+}
+
+output "alb_controller_role_arn" {
+  value = module.iam_alb_controller.alb_controller_role_arn
+}
+
+output "alb_dns" {
+  value = module.alb.alb_dns_name
+}
+output "rds_endpoint" {
+  value = module.rds.rds_endpoint
+  sensitive = true
+}
+output "s3_bucket" {
+  value = module.s3.bucket_name
+}
+
+

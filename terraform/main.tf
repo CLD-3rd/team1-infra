@@ -385,3 +385,32 @@ module "iam_alb_controller" {
   source        = "./modules/iam_alb_controller"
   cluster_name  = "team1-eks-cluster"
 }
+
+//all 서비스 어카운트
+module "vinyl_irsa" {
+  source = "./modules/irsa"
+
+  role_name            = "eks-vinyl-app-role"
+  namespace            = "vinyl"
+  service_account_name = "vinyl-app-sa"
+  oidc_provider_url    = module.eks.oidc_provider
+  oidc_provider_arn    = module.eks.oidc_provider_arn
+
+  policy_arns = [
+    "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+  ]
+}
+
+module "argocd_repo_irsa" {
+  source = "./modules/irsa"
+
+  role_name            = "eks-argocd-repo-role"
+  namespace            = "argocd"
+  service_account_name = "argocd-repo-server"
+  oidc_provider_url    = module.eks.oidc_provider
+  oidc_provider_arn    = module.eks.oidc_provider_arn
+
+  policy_arns = [
+    "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+  ]
+}
