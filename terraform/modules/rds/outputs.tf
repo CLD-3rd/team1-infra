@@ -11,3 +11,7 @@ output "rds_password" {
   value     = var.password
   sensitive = true
 }
+
+output "rds_port" {
+  value = aws_db_instance.this.port
+}
