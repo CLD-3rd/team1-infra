@@ -288,3 +288,12 @@ module "dynamodb" {
   hash_key      = "album_id"
   hash_key_type = "S"
 }
+
+module "s3" {
+  source            = "./modules/s3"
+  name_prefix       = var.team_name
+  environment       = "dev"
+  enable_versioning = true
+  allow_public_read = true
+}
+
