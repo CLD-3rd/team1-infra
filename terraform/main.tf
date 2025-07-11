@@ -2,7 +2,6 @@ provider "aws" {
   region = "ap-northeast-2"
 }
 
-# EKS 클러스터 IAM 역할
 resource "aws_iam_role" "eks_cluster_role" {
   name = "${var.team_name}-eks-cluster-role"
 
@@ -25,19 +24,16 @@ resource "aws_iam_role" "eks_cluster_role" {
   }
 }
 
-# EKS 클러스터 정책 연결
 resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
   role       = aws_iam_role.eks_cluster_role.name
 }
 
-# EKS 서비스 정책 연결
 resource "aws_iam_role_policy_attachment" "eks_service_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSServicePolicy"
   role       = aws_iam_role.eks_cluster_role.name
 }
 
-# EKS 노드 그룹 IAM 역할
 resource "aws_iam_role" "eks_node_role" {
   name = "${var.team_name}-eks-node-role" # 팀 prefix를 사용한 역할 이름
 
@@ -60,19 +56,16 @@ resource "aws_iam_role" "eks_node_role" {
   }
 }
 
-# EKS 워커 노드 정책 연결
 resource "aws_iam_role_policy_attachment" "eks_worker_node_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
   role       = aws_iam_role.eks_node_role.name
 }
 
-# EKS CNI 정책 연결
 resource "aws_iam_role_policy_attachment" "eks_cni_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
   role       = aws_iam_role.eks_node_role.name
 }
 
-# EC2 컨테이너 레지스트리 읽기 전용 정책 연결
 resource "aws_iam_role_policy_attachment" "ec2_container_registry_read_only" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
   role       = aws_iam_role.eks_node_role.name
@@ -135,7 +128,6 @@ module "elasticache" {
   number_of_replicas = 2
 }
 
-# EKS 클러스터 모듈
 module "eks" {
   source      = "./modules/eks"
   name_prefix = var.team_name
@@ -147,7 +139,6 @@ module "eks" {
   # cluster_security_group_ids = [aws_security_group.eks_cluster_sg.id] # 필요시 EKS 클러스터 보안 그룹 지정
 }
 
-# EKS 노드 그룹 모듈
 module "eks_node_group" {
   source       = "./modules/eks-node-group"
   name_prefix  = var.team_name
@@ -155,6 +146,57 @@ module "eks_node_group" {
   cluster_name = module.eks.cluster_name
   # EKS 노드 그룹이 사용할 IAM 역할 ARN을 지정해야 합니다.
   # 예: aws_iam_role.eks_node_role.arn
+  node_role_arn = aws_iam_role.eks_node_role.arn   # EKS 노드 그룹 IAM 역할 ARN 연결
+  subnet_ids    = module.subnet.private_subnet_ids # 노드 그룹은 Private Subnet에 배포
+}
+
+# EC2 인스턴스에 적용할 보안 그룹
+resource "aws_security_group" "ec2_sg" {
+  name        = "${var.team_name}-ec2-sg"
+  description = "Allow HTTP/SSH traffic to EC2"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "${var.team_name}-ec2-sg"
+    Environment = var.environment
+  }
+}
+
+# EC2 인스턴스 모듈
+module "ec2" {
+  source             = "./modules/ec2"
+  name_prefix        = var.team_name
+  environment        = var.environment
+  ami_id             = var.ec2_ami_id
+  instance_type      = var.ec2_instance_type
+  subnet_id          = module.subnet.public_subnet_ids[0] # 퍼블릭 서브넷에 배포
+  security_group_ids = [aws_security_group.ec2_sg.id]
+  key_name           = var.ec2_key_name
+  tags               = {}
+}
+
   node_role_arn = aws_iam_role.eks_node_role.arn       # EKS 노드 그룹 IAM 역할 ARN 연결
   subnet_ids    = module.subnet.private_subnet_ids_app # 노드 그룹은 Private Subnet에 배포
 }
+
