@@ -14,7 +14,7 @@ variable "environment" {
 variable "ec2_ami_id" {
   description = "EC2 인스턴스에 사용할 AMI ID"
   type        = string
-  default     = "ami-08943a151bd468f4e" 
+  default     = "ami-08943a151bd468f4e"
 }
 
 variable "ec2_instance_type" {

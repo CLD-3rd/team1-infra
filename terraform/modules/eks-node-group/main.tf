@@ -20,4 +20,9 @@ resource "aws_eks_node_group" "this" {
   }
 
   # EKS 노드 그룹 생성 시 필요한 추가 설정 (예: AMI 타입, 원격 액세스 등)은 여기에 추가
+
+  remote_access {
+    ec2_ssh_key               = var.ssh_key_name
+    source_security_group_ids = var.remote_access_source_security_group_ids
+  }
 }
