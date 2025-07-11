@@ -7,7 +7,8 @@ output "redis_port" {
 }
 
 output "rds_endpoint" {
-  value = module.rds.rds_endpoint
+  value     = module.rds.rds_endpoint
+  sensitive = true
 }
 
 output "rds_port" {
@@ -41,12 +42,7 @@ output "alb_controller_role_arn" {
 output "alb_dns" {
   value = module.alb.alb_dns_name
 }
-output "rds_endpoint" {
-  value = module.rds.rds_endpoint
-  sensitive = true
-}
+
 output "s3_bucket" {
   value = module.s3.bucket_name
 }
-
-

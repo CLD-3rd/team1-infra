@@ -306,7 +306,7 @@ module "dynamodb" {
 
 module "ecr" {
   source          = "./modules/ecr"
-  repository_name = "${var.team_name}-app-repo" 
+  repository_name = "${var.team_name}-app-repo"
   environment     = var.environment
   tags = {
     Name        = "${var.team_name}-app-repo"
@@ -334,13 +334,13 @@ output "ec2_public_ip" {
 
 // alb 모듈
 module "alb" {
-  source             = "./modules/alb"
-  name_prefix        = var.team_name
-  environment        = "dev"
-  vpc_id             = module.vpc.vpc_id
-  public_subnet_ids  = module.subnet.public_subnet_ids
-  security_group_id  = module.alb_sg.security_group_id
-  target_port        = 80
+  source            = "./modules/alb"
+  name_prefix       = var.team_name
+  environment       = "dev"
+  vpc_id            = module.vpc.vpc_id
+  public_subnet_ids = module.subnet.public_subnet_ids
+  security_group_id = module.alb_sg.security_group_id
+  target_port       = 80
 }
 
 //alb sg
@@ -382,8 +382,8 @@ module "alb_sg" {
 
 // alb iam 정책
 module "iam_alb_controller" {
-  source        = "./modules/iam_alb_controller"
-  cluster_name  = "team1-eks-cluster"
+  source       = "./modules/iam_alb_controller"
+  cluster_name = "team1-eks-cluster"
 }
 
 //all 서비스 어카운트
