@@ -26,5 +26,5 @@ variable "ec2_instance_type" {
 variable "ec2_key_name" {
   description = "EC2 인스턴스에 사용할 키 페어 이름"
   type        = string
-  default     = ""
+  default     = "test"
 }
