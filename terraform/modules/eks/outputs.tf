@@ -22,3 +22,8 @@ output "cluster_name" {
   description = "생성된 EKS 클러스터의 이름"
   value       = aws_eks_cluster.this.name
 }
+
+output "cluster_security_group_id" {
+  description = "EKS sg id"
+  value       = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
+}

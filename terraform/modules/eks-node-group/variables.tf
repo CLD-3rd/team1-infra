@@ -48,3 +48,13 @@ variable "min_size" {
   type        = number
   default     = 1
 }
+
+variable "ssh_key_name" {
+  description = "ssh key pair name to connect node remote"
+  type        = string
+}
+
+variable "remote_access_source_security_group_ids" {
+  description = "sg id list to allow remote connection (bastion SG)"
+  type        = list(string)
+}

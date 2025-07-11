@@ -120,8 +120,8 @@ module "elasticache" {
   environment = "dev"
   vpc_id      = module.vpc.vpc_id
   subnet_ids  = module.subnet.private_subnet_ids_data
-  # allowed_sg_ids = [ module.eks.workernode_sg_id ] eks 워커노드 sg
-  allowed_sg_ids     = [""]
+
+  allowed_sg_ids     = [module.eks.cluster_security_group_id]
   engine_version     = "7.1"
   node_type          = "cache.r5.large"
   preferred_azs      = ["ap-northeast-2a", "ap-northeast-2c"]
@@ -139,6 +139,16 @@ module "eks" {
   # cluster_security_group_ids = [aws_security_group.eks_cluster_sg.id] # 필요시 EKS 클러스터 보안 그룹 지정
 }
 
+resource "aws_security_group_rule" "eks_api_from_bastion" {
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.ec2_sg.id
+  security_group_id        = module.eks.cluster_security_group_id
+  description              = "Allow bastion sg to access eks"
+}
+
 module "eks_node_group" {
   source       = "./modules/eks-node-group"
   name_prefix  = var.team_name
@@ -146,8 +156,10 @@ module "eks_node_group" {
   cluster_name = module.eks.cluster_name
   # EKS 노드 그룹이 사용할 IAM 역할 ARN을 지정해야 합니다.
   # 예: aws_iam_role.eks_node_role.arn
-  node_role_arn = aws_iam_role.eks_node_role.arn   # EKS 노드 그룹 IAM 역할 ARN 연결
-  subnet_ids    = module.subnet.private_subnet_ids # 노드 그룹은 Private Subnet에 배포
+  node_role_arn                           = aws_iam_role.eks_node_role.arn   # EKS 노드 그룹 IAM 역할 ARN 연결
+  subnet_ids                              = module.subnet.private_subnet_ids # 노드 그룹은 Private Subnet에 배포
+  ssh_key_name                            = var.ec2_key_name
+  remote_access_source_security_group_ids = [aws_security_group.ec2_sg.id]
 }
 
 # EC2 인스턴스에 적용할 보안 그룹
@@ -223,7 +235,7 @@ module "rds_sg" {
       from_port       = 3306
       to_port         = 3306
       protocol        = "tcp"
-      security_groups = [module.eks_node_sg.security_group_id] # EKS에서만 접근 허용
+      security_groups = [module.eks_node_sg.security_group_id, module.eks.cluster_security_group_id] # EKS 노드 + 클러스터 SG 허용
       description     = "Allow MySQL from EKS nodes"
     }
   ]
@@ -270,9 +282,9 @@ module "eks_node_sg" {
 }
 
 module "dynamodb" {
-  source         = "./modules/dynamodb"
-  name_prefix    = var.team_name
-  environment    = "dev"
-  hash_key       = "album_id"
-  hash_key_type  = "S"
+  source        = "./modules/dynamodb"
+  name_prefix   = var.team_name
+  environment   = "dev"
+  hash_key      = "album_id"
+  hash_key_type = "S"
 }

@@ -4,12 +4,10 @@ resource "aws_security_group" "redis" {
   vpc_id      = var.vpc_id
 
   ingress {
-    from_port = var.port
-    to_port   = var.port
-    protocol  = "tcp"
-    # TODO: EKS 워커노드 sg로 변경 후 cidr block 삭제
-    # security_groups = var.allowed_sg_ids
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port       = var.port
+    to_port         = var.port
+    protocol        = "tcp"
+    security_groups = var.allowed_sg_ids
   }
 
   egress {
@@ -29,6 +27,10 @@ resource "aws_elasticache_subnet_group" "redis" {
   name        = "${var.name_prefix}-redis-subnet-group"
   description = "Redis subnet group"
   subnet_ids  = var.subnet_ids
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_elasticache_replication_group" "redis" {
