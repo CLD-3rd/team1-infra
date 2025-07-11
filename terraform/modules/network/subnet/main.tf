@@ -22,5 +22,6 @@ resource "aws_subnet" "private" {
     Name        = "${var.name_prefix}-private-${count.index}"
     Environment = var.environment
     Tier        = "private"
+    type        = count.index < length(var.azs) ? "app" : "data"
   }
 }
