@@ -1,42 +1,40 @@
 variable "name_prefix" {
-  description = "Prefix for resource names"
+  description = "리소스를 식별하는 데 사용되는 접두사"
   type        = string
 }
 
 variable "environment" {
-  description = "Environment for resources"
+  description = "배포 환경 (예: dev, stg, prd)"
   type        = string
 }
 
 variable "ami_id" {
-  description = "AMI for EC2 instance"
+  description = "EC2 인스턴스에 사용할 AMI ID"
   type        = string
-  default     = "ami-08943a151bd468f4e"
 }
 
 variable "instance_type" {
-  description = "Instance type for EC2"
+  description = "EC2 인스턴스 유형"
   type        = string
-  default     = "t2.micro"
 }
 
 variable "subnet_id" {
-  description = "Subnet ID for EC2 instance"
+  description = "EC2 인스턴스를 배포할 서브넷 ID"
   type        = string
 }
 
 variable "security_group_ids" {
-  description = "Security group IDs for EC2 instance"
+  description = "EC2 인스턴스에 적용할 보안 그룹 ID 목록"
   type        = list(string)
 }
 
 variable "key_name" {
-  description = "Key name for EC2 instance"
+  description = "EC2 인스턴스에 사용할 키 페어 이름"
   type        = string
 }
 
 variable "tags" {
-  description = "A map of tags to assign to the resource."
+  description = "EC2 인스턴스에 추가할 태그 맵"
   type        = map(string)
   default     = {}
 }
