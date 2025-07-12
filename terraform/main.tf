@@ -390,9 +390,12 @@ module "alb_sg" {
 
 // alb iam 정책
 module "iam_alb_controller" {
-  source       = "./modules/iam_alb_controller"
-  cluster_name = "team1-eks-cluster"
+  source        = "./modules/iam_alb_controller"
+  cluster_name  = module.eks.cluster_name  # 이미 생성된 EKS의 출력값
+  region        = "ap-northeast-2"
+  depends_on    = [module.eks]
 }
+
 
 //all 서비스 어카운트
 module "vinyl_irsa" {
