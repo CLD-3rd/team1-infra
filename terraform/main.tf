@@ -390,38 +390,37 @@ module "alb_sg" {
 
 // alb iam 정책
 module "iam_alb_controller" {
-  source        = "./modules/iam_alb_controller"
-  cluster_name  = module.eks.cluster_name  # 이미 생성된 EKS의 출력값
-  region        = "ap-northeast-2"
-  depends_on    = [module.eks]
+  source       = "./modules/iam_alb_controller"
+  cluster_name = module.eks.cluster_name   # 기존 EKS 클러스터 이름 사용
+  region       = "ap-northeast-2"        # 클러스터 리전 명시
+  depends_on   = [module.eks]             # EKS 생성 이후 적용
 }
 
+// EC2 키 페어 개인 키를 로컬에 파일로 저장
+resource "local_file" "ssh_private_key" {
+  content         = tls_private_key.this.private_key_pem
+  filename        = "${path.module}/${var.team_name}-key-pair.pem"
+  file_permission = "0400"
+}
 
-//all 서비스 어카운트
+// IRSA: Vinyl 애플리케이션용 서비스 어카운트 생성
 module "vinyl_irsa" {
-  source = "./modules/irsa"
-
+  source               = "./modules/irsa"
   role_name            = "eks-vinyl-app-role"
   namespace            = "vinyl"
   service_account_name = "vinyl-app-sa"
   oidc_provider_url    = module.eks.oidc_provider
   oidc_provider_arn    = module.eks.oidc_provider_arn
-
-  policy_arns = [
-    "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
-  ]
+  policy_arns          = ["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"]
 }
 
+// IRSA: ArgoCD Repo 서버용 서비스 어카운트 생성
 module "argocd_repo_irsa" {
-  source = "./modules/irsa"
-
+  source               = "./modules/irsa"
   role_name            = "eks-argocd-repo-role"
   namespace            = "argocd"
   service_account_name = "argocd-repo-server"
   oidc_provider_url    = module.eks.oidc_provider
   oidc_provider_arn    = module.eks.oidc_provider_arn
-
-  policy_arns = [
-    "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
-  ]
+  policy_arns          = ["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"]
 }
