@@ -23,8 +23,6 @@ variable "ec2_instance_type" {
   default     = "t2.micro"
 }
 
-
-
 variable "rds_password" {
   type        = string
   description = "RDS 비밀번호"

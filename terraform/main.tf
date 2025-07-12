@@ -306,7 +306,7 @@ module "dynamodb" {
 
 module "ecr" {
   source          = "./modules/ecr"
-  repository_name = "${var.team_name}-app-repo" 
+  repository_name = "${var.team_name}-app-repo"
   environment     = var.environment
   tags = {
     Name        = "${var.team_name}-app-repo"
@@ -342,13 +342,13 @@ output "ec2_public_ip" {
 
 // alb 모듈
 module "alb" {
-  source             = "./modules/alb"
-  name_prefix        = var.team_name
-  environment        = "dev"
-  vpc_id             = module.vpc.vpc_id
-  public_subnet_ids  = module.subnet.public_subnet_ids
-  security_group_id  = module.alb_sg.security_group_id
-  target_port        = 80
+  source            = "./modules/alb"
+  name_prefix       = var.team_name
+  environment       = "dev"
+  vpc_id            = module.vpc.vpc_id
+  public_subnet_ids = module.subnet.public_subnet_ids
+  security_group_id = module.alb_sg.security_group_id
+  target_port       = 80
 }
 
 //alb sg
@@ -390,18 +390,37 @@ module "alb_sg" {
 
 // alb iam 정책
 module "iam_alb_controller" {
-  source        = "./modules/iam_alb_controller"
-  cluster_name  = "team1-eks-cluster"
+  source       = "./modules/iam_alb_controller"
+  cluster_name = module.eks.cluster_name   # 기존 EKS 클러스터 이름 사용
+  region       = "ap-northeast-2"        # 클러스터 리전 명시
+  depends_on   = [module.eks]             # EKS 생성 이후 적용
 }
 
-# EC2 키 페어 개인 키를 로컬에 파일로 저장
-# 이 리소스는 Terraform apply 시 생성된 SSH 개인 키를 로컬 파일 시스템에 저장합니다.
-# filename: 저장될 파일의 경로와 이름. path.module은 현재 Terraform 실행 디렉터리를 의미합니다.
-# file_permission: 파일 권한을 0400으로 설정하여 소유자만 읽을 수 있도록 합니다.
-#                  이는 개인 키의 보안을 위해 매우 중요합니다.
+// EC2 키 페어 개인 키를 로컬에 파일로 저장
 resource "local_file" "ssh_private_key" {
   content         = tls_private_key.this.private_key_pem
   filename        = "${path.module}/${var.team_name}-key-pair.pem"
   file_permission = "0400"
 }
 
+// IRSA: Vinyl 애플리케이션용 서비스 어카운트 생성
+module "vinyl_irsa" {
+  source               = "./modules/irsa"
+  role_name            = "eks-vinyl-app-role"
+  namespace            = "vinyl"
+  service_account_name = "vinyl-app-sa"
+  oidc_provider_url    = module.eks.oidc_provider
+  oidc_provider_arn    = module.eks.oidc_provider_arn
+  policy_arns          = ["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"]
+}
+
+// IRSA: ArgoCD Repo 서버용 서비스 어카운트 생성
+module "argocd_repo_irsa" {
+  source               = "./modules/irsa"
+  role_name            = "eks-argocd-repo-role"
+  namespace            = "argocd"
+  service_account_name = "argocd-repo-server"
+  oidc_provider_url    = module.eks.oidc_provider
+  oidc_provider_arn    = module.eks.oidc_provider_arn
+  policy_arns          = ["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"]
+}
