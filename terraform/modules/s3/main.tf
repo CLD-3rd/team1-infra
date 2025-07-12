@@ -20,7 +20,7 @@ resource "aws_s3_bucket_public_access_block" "this" {
   bucket = aws_s3_bucket.this.id
 
   block_public_acls       = !var.allow_public_read
-  block_public_policy     = !var.allow_public_read
+  block_public_policy     = false
   ignore_public_acls      = !var.allow_public_read
   restrict_public_buckets = !var.allow_public_read
 }
