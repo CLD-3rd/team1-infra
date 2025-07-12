@@ -27,3 +27,14 @@ output "cluster_security_group_id" {
   description = "EKS sg id"
   value       = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
 }
+
+output "oidc_provider" {
+  description = "EKS 클러스터의 OIDC 공급자 URL"
+  value       = data.aws_eks_cluster.this.identity[0].oidc[0].issuer
+}
+
+output "oidc_provider_arn" {
+  description = "EKS 클러스터의 OIDC 공급자 ARN"
+  value       = aws_iam_openid_connect_provider.this.arn
+}
+

@@ -411,3 +411,32 @@ output "local_ssh_key_path" {
   description = "Path to the locally saved SSH private key file."
   value       = local_file.ssh_private_key.filename
 }
+
+//all 서비스 어카운트
+module "vinyl_irsa" {
+  source = "./modules/irsa"
+
+  role_name            = "eks-vinyl-app-role"
+  namespace            = "vinyl"
+  service_account_name = "vinyl-app-sa"
+  oidc_provider_url    = module.eks.oidc_provider
+  oidc_provider_arn    = module.eks.oidc_provider_arn
+
+  policy_arns = [
+    "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+  ]
+}
+
+module "argocd_repo_irsa" {
+  source = "./modules/irsa"
+
+  role_name            = "eks-argocd-repo-role"
+  namespace            = "argocd"
+  service_account_name = "argocd-repo-server"
+  oidc_provider_url    = module.eks.oidc_provider
+  oidc_provider_arn    = module.eks.oidc_provider_arn
+
+  policy_arns = [
+    "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+  ]
+}
