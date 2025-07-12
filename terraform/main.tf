@@ -322,6 +322,14 @@ module "s3" {
   allow_public_read = true
 }
 
+module "route53" {
+  source      = "./modules/route53"
+  domain_name = var.domain_name
+  tags = {
+    Name = "${var.team_name}-r53-zone"
+  }
+}
+
 output "private_key" {
   value     = tls_private_key.this.private_key_pem
   sensitive = true
@@ -384,4 +392,22 @@ module "alb_sg" {
 module "iam_alb_controller" {
   source        = "./modules/iam_alb_controller"
   cluster_name  = "team1-eks-cluster"
+}
+
+# EC2 키 페어 개인 키를 로컬에 파일로 저장
+# 이 리소스는 Terraform apply 시 생성된 SSH 개인 키를 로컬 파일 시스템에 저장합니다.
+# filename: 저장될 파일의 경로와 이름. path.module은 현재 Terraform 실행 디렉터리를 의미합니다.
+# file_permission: 파일 권한을 0400으로 설정하여 소유자만 읽을 수 있도록 합니다.
+#                  이는 개인 키의 보안을 위해 매우 중요합니다.
+resource "local_file" "ssh_private_key" {
+  content         = tls_private_key.this.private_key_pem
+  filename        = "${path.module}/${var.team_name}-key-pair.pem"
+  file_permission = "0400"
+}
+
+# 로컬에 저장된 SSH 개인 키 파일의 경로를 출력합니다.
+# 이 output을 통해 사용자는 키 파일이 어디에 저장되었는지 쉽게 확인할 수 있습니다.
+output "local_ssh_key_path" {
+  description = "Path to the locally saved SSH private key file."
+  value       = local_file.ssh_private_key.filename
 }

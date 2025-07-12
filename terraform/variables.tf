@@ -30,3 +30,8 @@ variable "rds_password" {
   description = "RDS 비밀번호"
   sensitive   = true
 }
+
+variable "domain_name" {
+  description = "The domain name to use for Route 53."
+  type        = string
+}

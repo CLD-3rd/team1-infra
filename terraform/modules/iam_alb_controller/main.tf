@@ -1,10 +1,4 @@
-data "aws_eks_cluster" "cluster" {
-  name = var.cluster_name
-}
 
-data "aws_eks_cluster_auth" "cluster" {
-  name = var.cluster_name
-}
 
 data "aws_iam_policy_document" "assume_role" {
   statement {
@@ -23,6 +17,14 @@ data "aws_iam_policy_document" "assume_role" {
       values   = ["system:serviceaccount:kube-system:aws-load-balancer-controller"]
     }
   }
+}
+
+data "aws_eks_cluster" "cluster" {
+  name = var.cluster_name
+}
+
+data "aws_eks_cluster_auth" "cluster" {
+  name = var.cluster_name
 }
 
 resource "aws_iam_openid_connect_provider" "oidc" {
