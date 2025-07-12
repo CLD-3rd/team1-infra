@@ -328,6 +328,19 @@ module "route53" {
   tags = {
     Name = "${var.team_name}-r53-zone"
   }
+
+  records = [
+    {
+      name = "www" 
+      type = "A"   
+
+      alias = {
+        name                   = module.alb.alb_dns_name
+        zone_id                = module.alb.alb_zone_id
+        evaluate_target_health = true 
+      }
+    }
+  ]
 }
 
 // alb 모듈
