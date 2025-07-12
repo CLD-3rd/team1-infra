@@ -12,11 +12,11 @@ resource "aws_lb" "this" {
 }
 
 resource "aws_lb_target_group" "this" {
-  name     = "${var.name_prefix}-${var.environment}-tg"
-  port     = var.target_port
-  protocol = "HTTP"
-  vpc_id   = var.vpc_id
-  target_type = "ip"  # EKS용
+  name        = "${var.name_prefix}-${var.environment}-tg"
+  port        = var.target_port
+  protocol    = "HTTP"
+  vpc_id      = var.vpc_id
+  target_type = "ip" # EKS용
 
   health_check {
     path                = "/"
