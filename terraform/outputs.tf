@@ -27,7 +27,7 @@ output "ec2_public_ip" {
 
 output "local_ssh_key_path" {
   description = "Path to the locally saved SSH private key file."
-  value       = local_file.ssh_private_key.filename
+  value       = local_file.ssh_private_key.content
 }
 
 output "vpc_id" {
