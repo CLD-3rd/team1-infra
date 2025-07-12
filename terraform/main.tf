@@ -388,12 +388,7 @@ module "iam_alb_controller" {
 
 
 
-// EC2 키 페어 개인 키를 로컬에 파일로 저장
-resource "local_file" "ssh_private_key" {
-  content         = tls_private_key.this.private_key_pem
-  filename        = "${path.module}/${var.team_name}-key-pair.pem"
-  file_permission = "0400"
-}
+
 
 // EC2 키 페어 개인 키를 로컬에 파일로 저장
 resource "local_file" "ssh_private_key" {
