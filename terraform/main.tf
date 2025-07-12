@@ -405,9 +405,3 @@ resource "local_file" "ssh_private_key" {
   file_permission = "0400"
 }
 
-# 로컬에 저장된 SSH 개인 키 파일의 경로를 출력합니다.
-# 이 output을 통해 사용자는 키 파일이 어디에 저장되었는지 쉽게 확인할 수 있습니다.
-output "local_ssh_key_path" {
-  description = "Path to the locally saved SSH private key file."
-  value       = local_file.ssh_private_key.filename
-}
