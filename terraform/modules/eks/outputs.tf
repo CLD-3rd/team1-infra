@@ -37,4 +37,3 @@ output "oidc_provider_arn" {
   description = "EKS 클러스터의 OIDC 공급자 ARN"
   value       = aws_iam_openid_connect_provider.this.arn
 }
-
