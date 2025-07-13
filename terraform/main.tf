@@ -138,9 +138,10 @@ module "elasticache" {
 
   allowed_sg_ids     = [module.eks.cluster_security_group_id]
   engine_version     = "7.1"
-  node_type          = "cache.r5.large"
-  preferred_azs      = ["ap-northeast-2a", "ap-northeast-2c"]
-  number_of_replicas = 2
+  node_type          = "cache.t4g.micro"   # 최소 사양으로 비용 절감
+  number_of_replicas = 1                   # 복제 노드 1개 → 단일 노드
+  preferred_azs      = ["ap-northeast-2a"] # 단일 AZ
+  multi_az_enabled   = false   # 단일 AZ ⇒ 추가 요금 방지
 }
 
 module "eks" {
@@ -175,6 +176,11 @@ module "eks_node_group" {
   subnet_ids                              = module.subnet.private_subnet_ids # 노드 그룹은 Private Subnet에 배포
   ssh_key_name                            = aws_key_pair.this.key_name
   remote_access_source_security_group_ids = [aws_security_group.ec2_sg.id]
+  instance_types = ["t3.small"]  # 비용 절감용 소형 인스턴스
+  desired_size   = 1             # 기본 1대만 가동
+  min_size       = 1
+  max_size       = 1
+  capacity_type  = "SPOT"     # 저비용 스팟 인스턴스 사용
 }
 
 # EC2 인스턴스에 적용할 보안 그룹
@@ -209,6 +215,34 @@ resource "aws_security_group" "ec2_sg" {
     Environment = var.environment
   }
 }
+# ── Bastion EC2가 IMDS로 자격 증명을 받게 하는 역할 ──
+resource "aws_iam_role" "bastion_role" {
+  name = "${var.team_name}-bastion-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+
+  tags = {
+    Name        = "${var.team_name}-bastion-role"
+    Environment = var.environment
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "bastion_eks_readonly" {
+  role       = aws_iam_role.bastion_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSReadOnlyAccess"
+}
+
+resource "aws_iam_instance_profile" "bastion_profile" {
+  name = "${var.team_name}-bastion-profile"
+  role = aws_iam_role.bastion_role.name
+}
 
 # EC2 인스턴스 모듈
 module "ec2" {
@@ -220,6 +254,7 @@ module "ec2" {
   subnet_id          = module.subnet.public_subnet_ids[0] # 퍼블릭 서브넷에 배포
   security_group_ids = [aws_security_group.ec2_sg.id]
   key_name           = aws_key_pair.this.key_name
+  iam_instance_profile = aws_iam_instance_profile.bastion_profile.name
   tags               = {}
 }
 
@@ -304,15 +339,6 @@ module "dynamodb" {
   hash_key_type = "S"
 }
 
-module "ecr" {
-  source          = "./modules/ecr"
-  repository_name = "${var.team_name}-app-repo"
-  environment     = var.environment
-  tags = {
-    Name        = "${var.team_name}-app-repo"
-    Environment = var.environment
-  }
-}
 
 module "s3" {
   source            = "./modules/s3"

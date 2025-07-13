@@ -34,7 +34,7 @@ resource "aws_elasticache_subnet_group" "redis" {
 }
 
 resource "aws_elasticache_replication_group" "redis" {
-  automatic_failover_enabled = true
+  automatic_failover_enabled = false
   replication_group_id       = "${var.name_prefix}-redis-rg"
   description                = "Redis replication group"
   node_type                  = var.node_type
@@ -47,7 +47,7 @@ resource "aws_elasticache_replication_group" "redis" {
   subnet_group_name  = aws_elasticache_subnet_group.redis.name
   security_group_ids = [aws_security_group.redis.id]
 
-  multi_az_enabled            = true
+  multi_az_enabled            = false
   preferred_cache_cluster_azs = var.preferred_azs
 
   apply_immediately = true
