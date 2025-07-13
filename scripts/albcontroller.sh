@@ -1,12 +1,25 @@
 #!/bin/bash
 
 # === 설정값 ===
-CLUSTER_NAME="team1-dev-eks"
+CLUSTER_NAME="team1-eks-cluster"
 REGION="ap-northeast-2"
-VPC_ID="<YOUR_VPC_ID>"  # Terraform 출력값 사용 권장
+VPC_ID="vpc-0dafb01ec03de6efe"  # Terraform 출력값 사용 권장
 SERVICE_ACCOUNT_NAME="aws-load-balancer-controller"
 NAMESPACE="kube-system"
-ROLE_ARN="<YOUR_IAM_ROLE_ARN>"  # Terraform 출력값 사용 권장
+ROLE_ARN="arn:aws:iam::061039804626:oidc-provider/oidc.eks.ap-northeast-2.amazonaws.com/id/A12FE5318CC62DC0A76EF2E04F11BFAE"  # Terraform 출력값 사용 권장
+
+sudo apt-get update
+# apt-transport-https may be a dummy package; if so, you can skip that package
+sudo apt-get install -y apt-transport-https ca-certificates curl gpg unzip
+sudo mkdir -p -m 755 /etc/apt/keyrings
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+sudo apt-get update
+sudo apt-get install -y kubelet kubeadm kubectl
+sudo apt-mark hold kubelet kubeadm kubectl
 
 # === 클러스터 연결 ===
 echo "[INFO] update-kubeconfig for EKS cluster..."

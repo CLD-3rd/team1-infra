@@ -29,6 +29,7 @@ output "local_ssh_key_path" {
   description = "Path to the locally saved SSH private key file."
   value       = local_file.ssh_private_key.content
   sensitive   = false
+
 }
 
 output "vpc_id" {

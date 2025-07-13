@@ -38,3 +38,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "iam_instance_profile" {
+  description = "EC2에 연결할 IAM Instance Profile 이름(없으면 빈 문자열)"
+  type        = string
+  default     = ""
+}
