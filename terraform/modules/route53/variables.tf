@@ -36,3 +36,21 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "create_acm_certificate" {
+  description = "Whether to create an ACM certificate"
+  type        = bool
+  default     = false
+}
+
+variable "acm_domain_name" {
+  description = "Domain name for the ACM certificate (e.g., *.example.com)"
+  type        = string
+  default     = ""
+}
+
+variable "acm_validation_method" {
+  description = "Validation method for the ACM certificate (e.g., DNS, EMAIL)"
+  type        = string
+  default     = "DNS"
+}
