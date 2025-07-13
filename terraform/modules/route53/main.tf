@@ -41,7 +41,7 @@ resource "aws_route53_record" "wildcard_validation" {
   count   = var.create_acm_certificate ? 1 : 0
   name    = tolist(aws_acm_certificate.wildcard_cert[0].domain_validation_options)[0].resource_record_name
   type    = tolist(aws_acm_certificate.wildcard_cert[0].domain_validation_options)[0].resource_record_type
-  zone_id = data.aws_route53_zone.selected[0].zone_id
+  zone_id = local.zone_id 
   records = [tolist(aws_acm_certificate.wildcard_cert[0].domain_validation_options)[0].resource_record_value]
   ttl     = 60
 }
