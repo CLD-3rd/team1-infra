@@ -75,3 +75,8 @@ output "alb_argocd_zone_id" {
 output "s3_bucket" {
   value = module.s3.bucket_name
 }
+
+output "acm_certificate_arn" {
+  description = "ARN of the ACM certificate created by the route53 module"
+  value       = module.route53.acm_certificate_arn
+}
