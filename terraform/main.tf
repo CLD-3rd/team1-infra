@@ -141,7 +141,6 @@ module "elasticache" {
   node_type          = "cache.t4g.micro"   # 최소 사양으로 비용 절감
   number_of_replicas = 1                   # 복제 노드 1개 → 단일 노드
   preferred_azs      = ["ap-northeast-2a"] # 단일 AZ
-  multi_az_enabled   = false   # 단일 AZ ⇒ 추가 요금 방지
 }
 
 module "eks" {
@@ -180,7 +179,6 @@ module "eks_node_group" {
   desired_size   = 1             # 기본 1대만 가동
   min_size       = 1
   max_size       = 1
-  capacity_type  = "SPOT"     # 저비용 스팟 인스턴스 사용
 }
 
 # EC2 인스턴스에 적용할 보안 그룹
