@@ -229,7 +229,26 @@ resource "aws_iam_role_policy_attachment" "bastion_eks_readonly" {
   role       = aws_iam_role.bastion_role.name
   policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
 }
+# Allow bastion to tag EC2 subnets for ELB
+resource "aws_iam_policy" "bastion_ec2_tagging" {
+  name        = "${var.team_name}-bastion-ec2-tagging"
+  description = "Allow bastion to create tags on EC2 resources"
+  policy      = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["ec2:CreateTags", "ec2:DeleteTags"]
+        Resource = "*"
+      }
+    ]
+  })
+}
 
+resource "aws_iam_role_policy_attachment" "bastion_ec2_tagging_attach" {
+  role       = aws_iam_role.bastion_role.name
+  policy_arn = aws_iam_policy.bastion_ec2_tagging.arn
+}
 resource "aws_iam_instance_profile" "bastion_profile" {
   name = "${var.team_name}-bastion-profile"
   role = aws_iam_role.bastion_role.name
