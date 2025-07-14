@@ -3,10 +3,14 @@
 # === 설정값 ===
 CLUSTER_NAME="team1-eks-cluster"
 REGION="ap-northeast-2"
-VPC_ID="vpc-0dafb01ec03de6efe"  # Terraform 출력값 사용 권장
+VPC_ID="vpc-0bf6101828762ca8c"  # Terraform 출력값 사용 권장
 SERVICE_ACCOUNT_NAME="aws-load-balancer-controller"
 NAMESPACE="kube-system"
-ROLE_ARN="arn:aws:iam::061039804626:oidc-provider/oidc.eks.ap-northeast-2.amazonaws.com/id/A12FE5318CC62DC0A76EF2E04F11BFAE"  # Terraform 출력값 사용 권장
+ROLE_ARN="arn:aws:iam::715411139253:role/team1-eks-cluster-alb-controller-role"  # Terraform 출력값 사용 권장
+ARCH=amd64
+BASTION_ROLE_ARN="arn:aws:iam::715411139253:role/team1-bastion-role"
+PUB_SUBNET1="subnet-0c41b2fa45c193119"
+PUB_SUBNET2="subnet-07ac69a6a746b67ea"
 
 sudo apt-get update
 # apt-transport-https may be a dummy package; if so, you can skip that package
@@ -20,6 +24,23 @@ sudo ./aws/install
 sudo apt-get update
 sudo apt-get install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
+curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+sudo apt-get install apt-transport-https --yes
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+sudo apt-get update
+sudo apt-get install helm
+
+PLATFORM=$(uname -s)_$ARCH
+curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$PLATFORM.tar.gz"
+tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz
+sudo install -m 0755 /tmp/eksctl /usr/local/bin && rm /tmp/eksctl
+
+eksctl create iamidentitymapping \
+  --cluster team1-eks-cluster \
+  --arn $BASTION_ROLE_ARN \
+  --group system:masters \
+  --username bastion \
+  --region ap-northeast-2
 
 # === 클러스터 연결 ===
 echo "[INFO] update-kubeconfig for EKS cluster..."
@@ -54,3 +75,104 @@ helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set ingressClass=alb
 
 echo "AWS Load Balancer Controller 설치 완료"
+
+# === Prometheus & Grafana 설치 ===
+echo "[INFO] Add Helm repo"
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+echo "[INFO] Installing kube-prometheus-stack (Prometheus + Grafana)"
+helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+  -n monitoring --create-namespace \
+  --set grafana.service.type=LoadBalancer \
+  --set prometheus.service.type=LoadBalancer \
+  --set grafana.service.annotations."service\.beta\.kubernetes\.io/aws-load-balancer-scheme"="internet-facing" \
+  --set prometheus.service.annotations."service\.beta\.kubernetes\.io/aws-load-balancer-scheme"="internet-facing"
+
+echo "[INFO] Tagging public subnets for ELB..."
+aws ec2 create-tags --resources $PUB_SUBNET1 $PUB_SUBNET2 \
+  --tags Key=kubernetes.io/cluster/$CLUSTER_NAME,Value=owned \
+         Key=kubernetes.io/role/elb,Value=1
+
+# === Prometheus & Grafana 서비스에 public 서브넷 명시 ===
+PUB_SUBNETS="$PUB_SUBNET1,$PUB_SUBNET2"
+echo "[INFO] Annotating Grafana service for internet-facing ELB..."
+kubectl -n monitoring annotate svc kube-prometheus-stack-grafana \
+  service.beta.kubernetes.io/aws-load-balancer-scheme="internet-facing" \
+  service.beta.kubernetes.io/aws-load-balancer-subnets="$PUB_SUBNETS" \
+  --overwrite
+
+echo "[INFO] Annotating Prometheus service for internet-facing ELB..."
+kubectl -n monitoring annotate svc kube-prometheus-stack-prometheus \
+  service.beta.kubernetes.io/aws-load-balancer-scheme="internet-facing" \
+  service.beta.kubernetes.io/aws-load-balancer-subnets="$PUB_SUBNETS" \
+  --overwrite
+
+echo "[INFO] Waiting for Grafana to be ready"
+kubectl rollout status deployment/kube-prometheus-stack-grafana -n monitoring --timeout=10m
+
+echo "[INFO] Prometheus & Grafana installation completed"
+
+
+mkdir -p manifest/argocd
+cd manifest/argocd
+helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update
+
+# --- Ensure Argo CD namespace exists ---
+if ! kubectl get namespace argocd >/dev/null 2>&1; then
+  echo "[INFO] Creating argocd namespace..."
+  kubectl create namespace argocd
+fi
+
+# 기본 values 가져오기
+helm show values argo/argo-cd > base-values.yaml
+cp base-values.yaml my-values.yaml
+
+# my-values.yaml 수정
+cat <<EOF >> my-values.yaml
+server:
+  service:
+    type: LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+      service.beta.kubernetes.io/aws-load-balancer-subnets: "$PUB_SUBNETS"
+  ingress:
+    enabled: false
+EOF
+
+# kustomization.yaml 생성
+cat <<EOF > kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: argocd
+resources:
+  - install.yaml
+EOF
+
+helm template argo-cd argo/argo-cd \
+  --namespace argocd \
+  -f my-values.yaml \
+  > install.yaml
+
+cd ~/manifest/argocd
+kubectl apply -k .
+
+
+kubectl -n argocd annotate svc argo-cd-argocd-server \
+  service.beta.kubernetes.io/aws-load-balancer-scheme="internet-facing" \
+  service.beta.kubernetes.io/aws-load-balancer-subnets="$PUB_SUBNETS" \
+  --overwrite
+
+
+echo "[INFO] Grafana admin password:"
+kubectl get secret -n monitoring kube-prometheus-stack-grafana \
+  -o jsonpath="{.data.admin-password}" | base64 --decode; echo
+echo "[INFO] ArgoCD admin password:"
+ADMIN_SECRET=$(kubectl -n argocd get secret -o name | grep 'initial-admin' | head -n1 | cut -d'/' -f2)
+if [ -z "$ADMIN_SECRET" ]; then
+  echo "Admin secret not found yet. Wait a few moments and retry:"
+  echo "  kubectl -n argocd get secret | grep initial-admin"
+else
+  kubectl -n argocd get secret "$ADMIN_SECRET" -o jsonpath="{.data.password}" | base64 --decode; echo
+fi

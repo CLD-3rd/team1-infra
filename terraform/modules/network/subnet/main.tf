@@ -9,6 +9,8 @@ resource "aws_subnet" "public" {
     Name        = "${var.name_prefix}-public-${count.index}"
     Environment = var.environment
     Tier        = "public"
+    "kubernetes.io/cluster/${var.name_prefix}-eks-cluster" = "owned"
+    "kubernetes.io/role/elb"                    = "1"
   }
 }
 
@@ -23,5 +25,7 @@ resource "aws_subnet" "private" {
     Environment = var.environment
     Tier        = "private"
     type        = count.index < length(var.azs) ? "app" : "data"
+    "kubernetes.io/cluster/${var.name_prefix}-eks-cluster" = "owned"
+    "kubernetes.io/role/internal-elb"               = "1"
   }
 }

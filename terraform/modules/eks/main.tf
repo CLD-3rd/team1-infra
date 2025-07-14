@@ -17,6 +17,9 @@ resource "aws_eks_cluster" "this" {
   }
 
   # EKS 클러스터 생성 시 필요한 추가 설정 (예: 로깅, 암호화 등)은 여기에 추가
+  access_config {
+    authentication_mode = "API_AND_CONFIG_MAP"
+  }
 }
 
 data "aws_eks_cluster" "this" {

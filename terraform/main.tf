@@ -229,10 +229,48 @@ resource "aws_iam_role_policy_attachment" "bastion_eks_readonly" {
   role       = aws_iam_role.bastion_role.name
   policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
 }
+# Allow bastion to tag EC2 subnets for ELB
+resource "aws_iam_policy" "bastion_ec2_tagging" {
+  name        = "${var.team_name}-bastion-ec2-tagging"
+  description = "Allow bastion to create tags on EC2 resources"
+  policy      = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["ec2:CreateTags", "ec2:DeleteTags"]
+        Resource = "*"
+      }
+    ]
+  })
+}
 
+resource "aws_iam_role_policy_attachment" "bastion_ec2_tagging_attach" {
+  role       = aws_iam_role.bastion_role.name
+  policy_arn = aws_iam_policy.bastion_ec2_tagging.arn
+}
 resource "aws_iam_instance_profile" "bastion_profile" {
   name = "${var.team_name}-bastion-profile"
   role = aws_iam_role.bastion_role.name
+}
+
+# ── EKS Access Entry: Bastion Role를 클러스터 Admin으로 매핑 (K8s aws-auth 불필요) ──
+resource "aws_eks_access_entry" "bastion" {
+  cluster_name  = module.eks.cluster_name
+  principal_arn = aws_iam_role.bastion_role.arn
+  type          = "STANDARD"          # 인증 + 권한
+}
+
+resource "aws_eks_access_policy_association" "bastion_admin" {
+  cluster_name  = module.eks.cluster_name
+  principal_arn = aws_iam_role.bastion_role.arn
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
+
+  depends_on = [aws_eks_access_entry.bastion]
 }
 
 # EC2 인스턴스 모듈
