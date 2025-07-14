@@ -382,75 +382,75 @@ module "route53" {
 }
 
 // alb 모듈
-module "alb_vinyl" {
-  source                = "./modules/alb"
-  name_prefix           = "${var.team_name}-vinyl"
-  environment           = "dev"
-  vpc_id                = module.vpc.vpc_id
-  public_subnet_ids     = module.subnet.public_subnet_ids
-  security_group_id     = module.alb_sg.security_group_id
-  target_port           = 80 
-  acm_certificate_arn   = module.route53.acm_certificate_arn
-  create_https_listener = true
-}
+# module "alb_vinyl" {
+#   source                = "./modules/alb"
+#   name_prefix           = "${var.team_name}-vinyl"
+#   environment           = "dev"
+#   vpc_id                = module.vpc.vpc_id
+#   public_subnet_ids     = module.subnet.public_subnet_ids
+#   security_group_id     = module.alb_sg.security_group_id
+#   target_port           = 80 
+#   acm_certificate_arn   = module.route53.acm_certificate_arn
+#   create_https_listener = true
+# }
 
-module "alb_argocd" {
-  source                = "./modules/alb"
-  name_prefix           = "${var.team_name}-argocd"
-  environment           = "dev"
-  vpc_id                = module.vpc.vpc_id
-  public_subnet_ids     = module.subnet.public_subnet_ids
-  security_group_id     = module.alb_sg.security_group_id # You might want a specific SG for ArgoCD
-  target_port           = 80                             
-  acm_certificate_arn   = module.route53.acm_certificate_arn
-  create_https_listener = true
-}
+# module "alb_argocd" {
+#   source                = "./modules/alb"
+#   name_prefix           = "${var.team_name}-argocd"
+#   environment           = "dev"
+#   vpc_id                = module.vpc.vpc_id
+#   public_subnet_ids     = module.subnet.public_subnet_ids
+#   security_group_id     = module.alb_sg.security_group_id # You might want a specific SG for ArgoCD
+#   target_port           = 80                             
+#   acm_certificate_arn   = module.route53.acm_certificate_arn
+#   create_https_listener = true
+# }
 
-//alb sg
-module "alb_sg" {
-  source      = "./modules/security-group"
-  name_prefix = var.team_name
-  sg_name     = "alb"
-  description = "Security group for ALB"
-  vpc_id      = module.vpc.vpc_id
-  environment = "dev"
+# //alb sg
+# module "alb_sg" {
+#   source      = "./modules/security-group"
+#   name_prefix = var.team_name
+#   sg_name     = "alb"
+#   description = "Security group for ALB"
+#   vpc_id      = module.vpc.vpc_id
+#   environment = "dev"
 
-  ingress_rules = [
-    {
-      from_port   = 80
-      to_port     = 80
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-      description = "Allow HTTP from anywhere"
-    },
-    {
-      from_port   = 443
-      to_port     = 443
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-      description = "Allow HTTPS from anywhere"
-    }
-  ]
+#   ingress_rules = [
+#     {
+#       from_port   = 80
+#       to_port     = 80
+#       protocol    = "tcp"
+#       cidr_blocks = ["0.0.0.0/0"]
+#       description = "Allow HTTP from anywhere"
+#     },
+#     {
+#       from_port   = 443
+#       to_port     = 443
+#       protocol    = "tcp"
+#       cidr_blocks = ["0.0.0.0/0"]
+#       description = "Allow HTTPS from anywhere"
+#     }
+#   ]
 
-  egress_rules = [
-    {
-      from_port   = 0
-      to_port     = 0
-      protocol    = "-1"
-      cidr_blocks = ["0.0.0.0/0"]
-      description = "Allow all outbound"
-    }
-  ]
-}
+#   egress_rules = [
+#     {
+#       from_port   = 0
+#       to_port     = 0
+#       protocol    = "-1"
+#       cidr_blocks = ["0.0.0.0/0"]
+#       description = "Allow all outbound"
+#     }
+#   ]
+# }
 
 // alb iam 정책
-module "iam_alb_controller" {
-  source       = "./modules/iam_alb_controller"
-  cluster_name = module.eks.cluster_name # 기존 EKS 클러스터 이름 사용
-  region       = "ap-northeast-2"        # 클러스터 리전 명시
+# module "iam_alb_controller" {
+#   source       = "./modules/iam_alb_controller"
+#   cluster_name = module.eks.cluster_name # 기존 EKS 클러스터 이름 사용
+#   region       = "ap-northeast-2"        # 클러스터 리전 명시
 
-  depends_on   = [module.eks]             # EKS 생성 이후 적용
-}
+#   depends_on   = [module.eks]             # EKS 생성 이후 적용
+# }
 
 
 // EC2 키 페어 개인 키를 로컬에 파일로 저장
@@ -460,24 +460,24 @@ resource "local_file" "ssh_private_key" {
   file_permission = "0400"
 }
 
-// IRSA: Vinyl 애플리케이션용 서비스 어카운트 생성
-module "vinyl_irsa" {
-  source               = "./modules/irsa"
-  role_name            = "eks-vinyl-app-role"
-  namespace            = "vinyl"
-  service_account_name = "vinyl-app-sa"
-  oidc_provider_url    = module.eks.oidc_provider
-  oidc_provider_arn    = module.eks.oidc_provider_arn
-  policy_arns          = ["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"]
-}
+# // IRSA: Vinyl 애플리케이션용 서비스 어카운트 생성
+# module "vinyl_irsa" {
+#   source               = "./modules/irsa"
+#   role_name            = "eks-vinyl-app-role"
+#   namespace            = "vinyl"
+#   service_account_name = "vinyl-app-sa"
+#   oidc_provider_url    = module.eks.oidc_provider
+#   oidc_provider_arn    = module.eks.oidc_provider_arn
+#   policy_arns          = ["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"]
+# }
 
-// IRSA: ArgoCD Repo 서버용 서비스 어카운트 생성
-module "argocd_repo_irsa" {
-  source               = "./modules/irsa"
-  role_name            = "eks-argocd-repo-role"
-  namespace            = "argocd"
-  service_account_name = "argocd-repo-server"
-  oidc_provider_url    = module.eks.oidc_provider
-  oidc_provider_arn    = module.eks.oidc_provider_arn
-  policy_arns          = ["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"]
-}
+# // IRSA: ArgoCD Repo 서버용 서비스 어카운트 생성
+# module "argocd_repo_irsa" {
+#   source               = "./modules/irsa"
+#   role_name            = "eks-argocd-repo-role"
+#   namespace            = "argocd"
+#   service_account_name = "argocd-repo-server"
+#   oidc_provider_url    = module.eks.oidc_provider
+#   oidc_provider_arn    = module.eks.oidc_provider_arn
+#   policy_arns          = ["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"]
+# }
