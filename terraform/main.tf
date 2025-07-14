@@ -339,47 +339,47 @@ module "s3" {
   allow_public_read = true
 }
 
-module "route53" {
-  source      = "./modules/route53"
-  domain_name = var.domain_name
-  tags = {
-    Name = "${var.team_name}-r53-zone"
-  }
+# module "route53" {
+#   source      = "./modules/route53"
+#   domain_name = var.domain_name
+#   tags = {
+#     Name = "${var.team_name}-r53-zone"
+#   }
 
-  records = [
-    {
-      name = "www"
-      type = "A"
+#   records = [
+#     {
+#       name = "www"
+#       type = "A"
 
-      alias = {
-        name                   = module.alb_vinyl.alb_dns_name
-        zone_id                = module.alb_vinyl.alb_zone_id
-        evaluate_target_health = true
-      }
-    },
-    {
-      name = "vinyl"
-      type = "CNAME"
-      alias = {
-        name                   = module.alb_vinyl.alb_dns_name
-        zone_id                = module.alb_vinyl.alb_zone_id
-        evaluate_target_health = true
-      }
-    },
-    {
-      name = "argocd"
-      type = "CNAME"
-      alias = {
-        name                   = module.alb_argocd.alb_dns_name
-        zone_id                = module.alb_argocd.alb_zone_id
-        evaluate_target_health = true
-      }
-    }
-  ]
+#       alias = {
+#         name                   = module.alb_vinyl.alb_dns_name
+#         zone_id                = module.alb_vinyl.alb_zone_id
+#         evaluate_target_health = true
+#       }
+#     },
+#     {
+#       name = "vinyl"
+#       type = "CNAME"
+#       alias = {
+#         name                   = module.alb_vinyl.alb_dns_name
+#         zone_id                = module.alb_vinyl.alb_zone_id
+#         evaluate_target_health = true
+#       }
+#     },
+#     {
+#       name = "argocd"
+#       type = "CNAME"
+#       alias = {
+#         name                   = module.alb_argocd.alb_dns_name
+#         zone_id                = module.alb_argocd.alb_zone_id
+#         evaluate_target_health = true
+#       }
+#     }
+#   ]
 
-  create_acm_certificate = true
-  acm_domain_name        = "*.${var.domain_name}"
-}
+#   create_acm_certificate = true
+#   acm_domain_name        = "*.${var.domain_name}"
+# }
 
 // alb 모듈
 # module "alb_vinyl" {
