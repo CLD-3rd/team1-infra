@@ -32,4 +32,17 @@ variable "rds_password" {
 variable "domain_name" {
   description = "The domain name to use for Route 53."
   type        = string
+  default = "r53-kjh.shop"
+}
+
+variable "nlb_dns_name" {
+  description = "The DNS name of the NLB created by the Kubernetes service."
+  type        = string
+  default     = ""
+}
+
+variable "nlb_zone_id" {
+  description = "The zone ID of the NLB created by the Kubernetes service."
+  type        = string
+  default     = ""
 }

@@ -377,47 +377,49 @@ module "s3" {
   allow_public_read = true
 }
 
-# module "route53" {
-#   source      = "./modules/route53"
-#   domain_name = var.domain_name
-#   tags = {
-#     Name = "${var.team_name}-r53-zone"
-#   }
+module "route53" {
+  source      = "./modules/route53"
+  domain_name = "r53-kjh.shop"
+  tags = {
+    Name = "${var.team_name}-r53-zone"
+  }
 
-#   records = [
-#     {
-#       name = "www"
-#       type = "A"
+  records = [
+    {
+      name = "www"
+      type = "A"
 
-#       alias = {
-#         name                   = module.alb_vinyl.alb_dns_name
-#         zone_id                = module.alb_vinyl.alb_zone_id
-#         evaluate_target_health = true
-#       }
-#     },
-#     {
-#       name = "vinyl"
-#       type = "CNAME"
-#       alias = {
-#         name                   = module.alb_vinyl.alb_dns_name
-#         zone_id                = module.alb_vinyl.alb_zone_id
-#         evaluate_target_health = true
-#       }
-#     },
-#     {
-#       name = "argocd"
-#       type = "CNAME"
-#       alias = {
-#         name                   = module.alb_argocd.alb_dns_name
-#         zone_id                = module.alb_argocd.alb_zone_id
-#         evaluate_target_health = true
-#       }
-#     }
-#   ]
+      alias = {
+        name                   = var.nlb_dns_name
+        zone_id                = var.nlb_zone_id
+        evaluate_target_health = true
+      }
+    },
+    {
+      name = "vinyl"
+      type = "A"
 
-#   create_acm_certificate = true
-#   acm_domain_name        = "*.${var.domain_name}"
-# }
+      alias = {
+        name                   = var.nlb_dns_name
+        zone_id                = var.nlb_zone_id
+        evaluate_target_health = true
+      }
+    },
+    {
+      name = "argocd"
+      type = "A"
+
+      alias = {
+        name                   = var.nlb_dns_name
+        zone_id                = var.nlb_zone_id
+        evaluate_target_health = true
+      }
+    }
+  ]
+
+  create_acm_certificate = true
+  acm_domain_name        = "*.r53-kjh.shop"
+}
 
 // alb 모듈
 # module "alb_vinyl" {
@@ -481,14 +483,7 @@ module "s3" {
 #   ]
 # }
 
-// alb iam 컨트롤러 정책
-module "iam_alb_controller" {
-  source       = "./modules/iam_alb_controller"
-  cluster_name = module.eks.cluster_name # 기존 EKS 클러스터 이름 사용
-  region       = "ap-northeast-2"        # 클러스터 리전 명시
 
-  depends_on   = [module.eks]             # EKS 생성 이후 적용
-}
 
 
 // EC2 키 페어 개인 키를 로컬에 파일로 저장
@@ -498,16 +493,16 @@ resource "local_file" "ssh_private_key" {
   file_permission = "0400"
 }
 
-# // IRSA: Vinyl 애플리케이션용 서비스 어카운트 생성
-# module "vinyl_irsa" {
-#   source               = "./modules/irsa"
-#   role_name            = "eks-vinyl-app-role"
-#   namespace            = "vinyl"
-#   service_account_name = "vinyl-app-sa"
-#   oidc_provider_url    = module.eks.oidc_provider
-#   oidc_provider_arn    = module.eks.oidc_provider_arn
-#   policy_arns          = ["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"]
-# }
+// IRSA: Vinyl 애플리케이션용 서비스 어카운트 생성
+module "vinyl_irsa" {
+  source               = "./modules/irsa"
+  role_name            = "eks-vinyl-app-role"
+  namespace            = "vinyl"
+  service_account_name = "vinyl-app-sa"
+  oidc_provider_url    = module.eks.oidc_provider
+  oidc_provider_arn    = module.eks.oidc_provider_arn
+  policy_arns          = ["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess", "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"]
+}
 
 # // IRSA: ArgoCD Repo 서버용 서비스 어카운트 생성
 # module "argocd_repo_irsa" {
