@@ -52,9 +52,9 @@ output "oidc_provider_arn" {
   value = module.eks.oidc_provider_arn
 }
 
-# output "alb_controller_role_arn" {
-#   value = module.iam_alb_controller.alb_controller_role_arn
-# }
+output "alb_controller_role_arn" {
+  value = module.iam_alb_controller.alb_controller_role_arn
+}
 
 # output "alb_vinyl_dns_name" {
 #   value = module.alb_vinyl.alb_dns_name
