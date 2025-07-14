@@ -1,3 +1,13 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+  required_version = ">= 1.3"
+}
+
 provider "aws" {
   region = "ap-northeast-2"
 }
@@ -443,14 +453,14 @@ module "s3" {
 #   ]
 # }
 
-// alb iam 정책
-# module "iam_alb_controller" {
-#   source       = "./modules/iam_alb_controller"
-#   cluster_name = module.eks.cluster_name # 기존 EKS 클러스터 이름 사용
-#   region       = "ap-northeast-2"        # 클러스터 리전 명시
+// alb iam 컨트롤러 정책
+module "iam_alb_controller" {
+  source       = "./modules/iam_alb_controller"
+  cluster_name = module.eks.cluster_name # 기존 EKS 클러스터 이름 사용
+  region       = "ap-northeast-2"        # 클러스터 리전 명시
 
-#   depends_on   = [module.eks]             # EKS 생성 이후 적용
-# }
+  depends_on   = [module.eks]             # EKS 생성 이후 적용
+}
 
 
 // EC2 키 페어 개인 키를 로컬에 파일로 저장
