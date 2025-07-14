@@ -76,10 +76,10 @@ output "s3_bucket" {
   value = module.s3.bucket_name
 }
 
-output "acm_certificate_arn" {
-  description = "ARN of the ACM certificate created by the route53 module"
-  value       = module.route53.acm_certificate_arn
-}
+# output "acm_certificate_arn" {
+#   description = "ARN of the ACM certificate created by the route53 module"
+#   value       = module.route53.acm_certificate_arn
+# }
 
 output "bastion_role_arn" {
   description = "IAM Role ARN for the Bastion EC2 instance"
