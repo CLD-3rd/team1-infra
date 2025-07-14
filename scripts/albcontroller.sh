@@ -9,8 +9,8 @@ NAMESPACE="kube-system"
 ROLE_ARN="arn:aws:iam::715411139253:role/team1-eks-cluster-alb-controller-role"  # Terraform 출력값 사용 권장
 ARCH=amd64
 BASTION_ROLE_ARN="arn:aws:iam::715411139253:role/team1-bastion-role"
-PUB_SUBNET1="subnet-aaa111"
-PUB_SUBNET2="subnet-bbb222"
+PUB_SUBNET1="subnet-0c41b2fa45c193119"
+PUB_SUBNET2="subnet-07ac69a6a746b67ea"
 
 sudo apt-get update
 # apt-transport-https may be a dummy package; if so, you can skip that package
@@ -74,7 +74,6 @@ helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set vpcId=$VPC_ID \
   --set ingressClass=alb
 
-
 echo "AWS Load Balancer Controller 설치 완료"
 
 # === Prometheus & Grafana 설치 ===
@@ -113,6 +112,67 @@ echo "[INFO] Waiting for Grafana to be ready"
 kubectl rollout status deployment/kube-prometheus-stack-grafana -n monitoring --timeout=10m
 
 echo "[INFO] Prometheus & Grafana installation completed"
+
+
+mkdir -p manifest/argocd
+cd manifest/argocd
+helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update
+
+# --- Ensure Argo CD namespace exists ---
+if ! kubectl get namespace argocd >/dev/null 2>&1; then
+  echo "[INFO] Creating argocd namespace..."
+  kubectl create namespace argocd
+fi
+
+# 기본 values 가져오기
+helm show values argo/argo-cd > base-values.yaml
+cp base-values.yaml my-values.yaml
+
+# my-values.yaml 수정
+cat <<EOF >> my-values.yaml
+server:
+  service:
+    type: LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+      service.beta.kubernetes.io/aws-load-balancer-subnets: "$PUB_SUBNETS"
+  ingress:
+    enabled: false
+EOF
+
+# kustomization.yaml 생성
+cat <<EOF > kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: argocd
+resources:
+  - install.yaml
+EOF
+
+helm template argo-cd argo/argo-cd \
+  --namespace argocd \
+  -f my-values.yaml \
+  > install.yaml
+
+cd ~/manifest/argocd
+kubectl apply -k .
+
+
+kubectl -n argocd annotate svc argo-cd-argocd-server \
+  service.beta.kubernetes.io/aws-load-balancer-scheme="internet-facing" \
+  service.beta.kubernetes.io/aws-load-balancer-subnets="$PUB_SUBNETS" \
+  --overwrite
+
+
 echo "[INFO] Grafana admin password:"
 kubectl get secret -n monitoring kube-prometheus-stack-grafana \
   -o jsonpath="{.data.admin-password}" | base64 --decode; echo
+echo "[INFO] ArgoCD admin password:"
+ADMIN_SECRET=$(kubectl -n argocd get secret -o name | grep 'initial-admin' | head -n1 | cut -d'/' -f2)
+if [ -z "$ADMIN_SECRET" ]; then
+  echo "Admin secret not found yet. Wait a few moments and retry:"
+  echo "  kubectl -n argocd get secret | grep initial-admin"
+else
+  kubectl -n argocd get secret "$ADMIN_SECRET" -o jsonpath="{.data.password}" | base64 --decode; echo
+fi
