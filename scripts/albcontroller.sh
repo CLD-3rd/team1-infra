@@ -3,12 +3,14 @@
 # === 설정값 ===
 CLUSTER_NAME="team1-eks-cluster"
 REGION="ap-northeast-2"
-VPC_ID="vpc-0dafb01ec03de6efe"  # Terraform 출력값 사용 권장
+VPC_ID="vpc-0bf6101828762ca8c"  # Terraform 출력값 사용 권장
 SERVICE_ACCOUNT_NAME="aws-load-balancer-controller"
 NAMESPACE="kube-system"
-ROLE_ARN="arn:aws:iam::061039804626:role/team1-eks-cluster-alb-controller-role"  # Terraform 출력값 사용 권장
+ROLE_ARN="arn:aws:iam::715411139253:role/team1-eks-cluster-alb-controller-role"  # Terraform 출력값 사용 권장
 ARCH=amd64
-BASTION_ROLE_ARN="arn:aws:iam::061039804626:role/team1-bastion-role"
+BASTION_ROLE_ARN="arn:aws:iam::715411139253:role/team1-bastion-role"
+PUB_SUBNET1="subnet-aaa111"
+PUB_SUBNET2="subnet-bbb222"
 
 sudo apt-get update
 # apt-transport-https may be a dummy package; if so, you can skip that package
@@ -84,7 +86,28 @@ echo "[INFO] Installing kube-prometheus-stack (Prometheus + Grafana)"
 helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack \
   -n monitoring --create-namespace \
   --set grafana.service.type=LoadBalancer \
-  --set prometheus.service.type=LoadBalancer
+  --set prometheus.service.type=LoadBalancer \
+  --set grafana.service.annotations."service\.beta\.kubernetes\.io/aws-load-balancer-scheme"="internet-facing" \
+  --set prometheus.service.annotations."service\.beta\.kubernetes\.io/aws-load-balancer-scheme"="internet-facing"
+
+echo "[INFO] Tagging public subnets for ELB..."
+aws ec2 create-tags --resources $PUB_SUBNET1 $PUB_SUBNET2 \
+  --tags Key=kubernetes.io/cluster/$CLUSTER_NAME,Value=owned \
+         Key=kubernetes.io/role/elb,Value=1
+
+# === Prometheus & Grafana 서비스에 public 서브넷 명시 ===
+PUB_SUBNETS="$PUB_SUBNET1,$PUB_SUBNET2"
+echo "[INFO] Annotating Grafana service for internet-facing ELB..."
+kubectl -n monitoring annotate svc kube-prometheus-stack-grafana \
+  service.beta.kubernetes.io/aws-load-balancer-scheme="internet-facing" \
+  service.beta.kubernetes.io/aws-load-balancer-subnets="$PUB_SUBNETS" \
+  --overwrite
+
+echo "[INFO] Annotating Prometheus service for internet-facing ELB..."
+kubectl -n monitoring annotate svc kube-prometheus-stack-prometheus \
+  service.beta.kubernetes.io/aws-load-balancer-scheme="internet-facing" \
+  service.beta.kubernetes.io/aws-load-balancer-subnets="$PUB_SUBNETS" \
+  --overwrite
 
 echo "[INFO] Waiting for Grafana to be ready"
 kubectl rollout status deployment/kube-prometheus-stack-grafana -n monitoring --timeout=10m
