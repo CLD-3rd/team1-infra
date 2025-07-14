@@ -13,3 +13,8 @@ output "name_servers" {
   value       = var.create_zone ? aws_route53_zone.this[0].name_servers : null
   sensitive   = true
 }
+
+output "acm_certificate_arn" {
+  description = "ARN of the ACM certificate"
+  value       = var.create_acm_certificate ? aws_acm_certificate.wildcard_cert[0].arn : null
+}

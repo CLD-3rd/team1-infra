@@ -28,7 +28,8 @@ output "ec2_public_ip" {
 output "local_ssh_key_path" {
   description = "Path to the locally saved SSH private key file."
   value       = local_file.ssh_private_key.content
-  sensitive = true
+  sensitive   = true
+
 }
 
 output "vpc_id" {
@@ -55,10 +56,32 @@ output "alb_controller_role_arn" {
   value = module.iam_alb_controller.alb_controller_role_arn
 }
 
-output "alb_dns" {
-  value = module.alb.alb_dns_name
+output "alb_vinyl_dns_name" {
+  value = module.alb_vinyl.alb_dns_name
+}
+
+output "alb_vinyl_zone_id" {
+  value = module.alb_vinyl.alb_zone_id
+}
+
+output "alb_argocd_dns_name" {
+  value = module.alb_argocd.alb_dns_name
+}
+
+output "alb_argocd_zone_id" {
+  value = module.alb_argocd.alb_zone_id
 }
 
 output "s3_bucket" {
   value = module.s3.bucket_name
+}
+
+output "acm_certificate_arn" {
+  description = "ARN of the ACM certificate created by the route53 module"
+  value       = module.route53.acm_certificate_arn
+}
+
+output "bastion_role_arn" {
+  description = "IAM Role ARN for the Bastion EC2 instance"
+  value       = aws_iam_role.bastion_role.arn
 }

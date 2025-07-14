@@ -147,8 +147,6 @@ module "eks" {
   source      = "./modules/eks"
   name_prefix = var.team_name
   environment = "dev"
-  # EKS 클러스터가 사용할 IAM 역할 ARN을 지정해야 합니다.
-  # 예: aws_iam_role.eks_cluster_role.arn
   cluster_iam_role_arn = aws_iam_role.eks_cluster_role.arn    # EKS 클러스터 IAM 역할 ARN 연결
   subnet_ids           = module.subnet.private_subnet_ids_app # EKS 클러스터는 Private Subnet에 배포
   # cluster_security_group_ids = [aws_security_group.eks_cluster_sg.id] # 필요시 EKS 클러스터 보안 그룹 지정
@@ -170,7 +168,6 @@ module "eks_node_group" {
   environment  = "dev"
   cluster_name = module.eks.cluster_name
   # EKS 노드 그룹이 사용할 IAM 역할 ARN을 지정해야 합니다.
-  # 예: aws_iam_role.eks_node_role.arn
   node_role_arn                           = aws_iam_role.eks_node_role.arn   # EKS 노드 그룹 IAM 역할 ARN 연결
   subnet_ids                              = module.subnet.private_subnet_ids # 노드 그룹은 Private Subnet에 배포
   ssh_key_name                            = aws_key_pair.this.key_name
@@ -209,6 +206,34 @@ resource "aws_security_group" "ec2_sg" {
     Environment = var.environment
   }
 }
+# ── Bastion EC2가 IMDS로 자격 증명을 받게 하는 역할 ──
+resource "aws_iam_role" "bastion_role" {
+  name = "${var.team_name}-bastion-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+
+  tags = {
+    Name        = "${var.team_name}-bastion-role"
+    Environment = var.environment
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "bastion_eks_readonly" {
+  role       = aws_iam_role.bastion_role.name
+  policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
+}
+
+resource "aws_iam_instance_profile" "bastion_profile" {
+  name = "${var.team_name}-bastion-profile"
+  role = aws_iam_role.bastion_role.name
+}
 
 # EC2 인스턴스 모듈
 module "ec2" {
@@ -220,6 +245,7 @@ module "ec2" {
   subnet_id          = module.subnet.public_subnet_ids[0] # 퍼블릭 서브넷에 배포
   security_group_ids = [aws_security_group.ec2_sg.id]
   key_name           = aws_key_pair.this.key_name
+  iam_instance_profile = aws_iam_instance_profile.bastion_profile.name
   tags               = {}
 }
 
@@ -304,15 +330,6 @@ module "dynamodb" {
   hash_key_type = "S"
 }
 
-module "ecr" {
-  source          = "./modules/ecr"
-  repository_name = "${var.team_name}-app-repo"
-  environment     = var.environment
-  tags = {
-    Name        = "${var.team_name}-app-repo"
-    Environment = var.environment
-  }
-}
 
 module "s3" {
   source            = "./modules/s3"
@@ -331,27 +348,62 @@ module "route53" {
 
   records = [
     {
-      name = "www" 
-      type = "A"   
+      name = "www"
+      type = "A"
 
       alias = {
-        name                   = module.alb.alb_dns_name
-        zone_id                = module.alb.alb_zone_id
-        evaluate_target_health = true 
+        name                   = module.alb_vinyl.alb_dns_name
+        zone_id                = module.alb_vinyl.alb_zone_id
+        evaluate_target_health = true
+      }
+    },
+    {
+      name = "vinyl"
+      type = "CNAME"
+      alias = {
+        name                   = module.alb_vinyl.alb_dns_name
+        zone_id                = module.alb_vinyl.alb_zone_id
+        evaluate_target_health = true
+      }
+    },
+    {
+      name = "argocd"
+      type = "CNAME"
+      alias = {
+        name                   = module.alb_argocd.alb_dns_name
+        zone_id                = module.alb_argocd.alb_zone_id
+        evaluate_target_health = true
       }
     }
   ]
+
+  create_acm_certificate = true
+  acm_domain_name        = "*.${var.domain_name}"
 }
 
 // alb 모듈
-module "alb" {
-  source            = "./modules/alb"
-  name_prefix       = var.team_name
-  environment       = "dev"
-  vpc_id            = module.vpc.vpc_id
-  public_subnet_ids = module.subnet.public_subnet_ids
-  security_group_id = module.alb_sg.security_group_id
-  target_port       = 80
+module "alb_vinyl" {
+  source                = "./modules/alb"
+  name_prefix           = "${var.team_name}-vinyl"
+  environment           = "dev"
+  vpc_id                = module.vpc.vpc_id
+  public_subnet_ids     = module.subnet.public_subnet_ids
+  security_group_id     = module.alb_sg.security_group_id
+  target_port           = 80 
+  acm_certificate_arn   = module.route53.acm_certificate_arn
+  create_https_listener = true
+}
+
+module "alb_argocd" {
+  source                = "./modules/alb"
+  name_prefix           = "${var.team_name}-argocd"
+  environment           = "dev"
+  vpc_id                = module.vpc.vpc_id
+  public_subnet_ids     = module.subnet.public_subnet_ids
+  security_group_id     = module.alb_sg.security_group_id # You might want a specific SG for ArgoCD
+  target_port           = 80                             
+  acm_certificate_arn   = module.route53.acm_certificate_arn
+  create_https_listener = true
 }
 
 //alb sg
@@ -394,13 +446,11 @@ module "alb_sg" {
 // alb iam 정책
 module "iam_alb_controller" {
   source       = "./modules/iam_alb_controller"
-  cluster_name = module.eks.cluster_name   # 기존 EKS 클러스터 이름 사용
+  cluster_name = module.eks.cluster_name # 기존 EKS 클러스터 이름 사용
   region       = "ap-northeast-2"        # 클러스터 리전 명시
+
   depends_on   = [module.eks]             # EKS 생성 이후 적용
 }
-
-
-
 
 
 // EC2 키 페어 개인 키를 로컬에 파일로 저장
