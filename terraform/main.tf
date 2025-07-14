@@ -235,6 +235,25 @@ resource "aws_iam_instance_profile" "bastion_profile" {
   role = aws_iam_role.bastion_role.name
 }
 
+# ── EKS Access Entry: Bastion Role를 클러스터 Admin으로 매핑 (K8s aws-auth 불필요) ──
+resource "aws_eks_access_entry" "bastion" {
+  cluster_name  = module.eks.cluster_name
+  principal_arn = aws_iam_role.bastion_role.arn
+  type          = "STANDARD"          # 인증 + 권한
+}
+
+resource "aws_eks_access_policy_association" "bastion_admin" {
+  cluster_name  = module.eks.cluster_name
+  principal_arn = aws_iam_role.bastion_role.arn
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
+
+  depends_on = [aws_eks_access_entry.bastion]
+}
+
 # EC2 인스턴스 모듈
 module "ec2" {
   source             = "./modules/ec2"
