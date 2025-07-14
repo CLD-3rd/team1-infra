@@ -58,10 +58,3 @@ variable "remote_access_source_security_group_ids" {
   description = "sg id list to allow remote connection (bastion SG)"
   type        = list(string)
 }
-
-
-variable "capacity_type" {
-  description = "노드 그룹 인스턴스 구매 옵션 (ON_DEMAND 또는 SPOT)"
-  type        = string
-  default     = "SPOT"
-}

@@ -138,9 +138,9 @@ module "elasticache" {
 
   allowed_sg_ids     = [module.eks.cluster_security_group_id]
   engine_version     = "7.1"
-  node_type          = "cache.t4g.micro"   # 최소 사양으로 비용 절감
-  number_of_replicas = 1                   # 복제 노드 1개 → 단일 노드
-  preferred_azs      = ["ap-northeast-2a"] # 단일 AZ
+  node_type          = "cache.r5.large"
+  preferred_azs      = ["ap-northeast-2a", "ap-northeast-2c"]
+  number_of_replicas = 2
 }
 
 module "eks" {
@@ -172,10 +172,6 @@ module "eks_node_group" {
   subnet_ids                              = module.subnet.private_subnet_ids # 노드 그룹은 Private Subnet에 배포
   ssh_key_name                            = aws_key_pair.this.key_name
   remote_access_source_security_group_ids = [aws_security_group.ec2_sg.id]
-  instance_types = ["t3.small"]  # 비용 절감용 소형 인스턴스
-  desired_size   = 1             # 기본 1대만 가동
-  min_size       = 1
-  max_size       = 1
 }
 
 # EC2 인스턴스에 적용할 보안 그룹
