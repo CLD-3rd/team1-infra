@@ -377,49 +377,49 @@ module "s3" {
   allow_public_read = true
 }
 
-module "route53" {
-  source      = "./modules/route53"
-  domain_name = "r53-kjh.shop"
-  tags = {
-    Name = "${var.team_name}-r53-zone"
-  }
+# module "route53" {
+#   source      = "./modules/route53"
+#   domain_name = "r53-kjh.shop"
+#   tags = {
+#     Name = "${var.team_name}-r53-zone"
+#   }
 
-  records = [
-    {
-      name = "www"
-      type = "A"
+#   records = [
+#     {
+#       name = "www"
+#       type = "A"
 
-      alias = {
-        name                   = var.nlb_dns_name
-        zone_id                = var.nlb_zone_id
-        evaluate_target_health = true
-      }
-    },
-    {
-      name = "vinyl"
-      type = "A"
+#       alias = {
+#         name                   = var.nlb_dns_name
+#         zone_id                = var.nlb_zone_id
+#         evaluate_target_health = true
+#       }
+#     },
+#     {
+#       name = "vinyl"
+#       type = "A"
 
-      alias = {
-        name                   = var.nlb_dns_name
-        zone_id                = var.nlb_zone_id
-        evaluate_target_health = true
-      }
-    },
-    {
-      name = "argocd"
-      type = "A"
+#       alias = {
+#         name                   = var.nlb_dns_name
+#         zone_id                = var.nlb_zone_id
+#         evaluate_target_health = true
+#       }
+#     },
+#     {
+#       name = "argocd"
+#       type = "A"
 
-      alias = {
-        name                   = var.nlb_dns_name
-        zone_id                = var.nlb_zone_id
-        evaluate_target_health = true
-      }
-    }
-  ]
+#       alias = {
+#         name                   = var.nlb_dns_name
+#         zone_id                = var.nlb_zone_id
+#         evaluate_target_health = true
+#       }
+#     }
+#   ]
 
-  create_acm_certificate = true
-  acm_domain_name        = "*.r53-kjh.shop"
-}
+#   create_acm_certificate = true
+#   acm_domain_name        = "*.r53-kjh.shop"
+# }
 
 // alb 모듈
 # module "alb_vinyl" {
