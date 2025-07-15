@@ -85,3 +85,9 @@ output "bastion_role_arn" {
   description = "IAM Role ARN for the Bastion EC2 instance"
   value       = aws_iam_role.bastion_role.arn
 }
+
+output "vinyl_irsa_role_arn" {
+  description = "IAM Role ARN for the Vinyl IRSA"
+  value       = module.vinyl_irsa.role_arn
+}
+
