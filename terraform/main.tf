@@ -498,7 +498,7 @@ resource "local_file" "ssh_private_key" {
   file_permission = "0400"
 }
 
- // IRSA: Vinyl 애플리케이션용 서비스 어카운트 생성
+// IRSA: Vinyl 애플리케이션용 서비스 어카운트 생성
 module "vinyl_irsa" {
   source               = "./modules/irsa"
   role_name            = "eks-vinyl-app-role"
@@ -509,7 +509,7 @@ module "vinyl_irsa" {
   policy_arns          = ["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"]
 }
 
- // IRSA: ArgoCD Repo 서버용 서비스 어카운트 생성
+// IRSA: ArgoCD Repo 서버용 서비스 어카운트 생성
 module "argocd_repo_irsa" {
   source               = "./modules/irsa"
   role_name            = "eks-argocd-repo-role"
@@ -517,4 +517,5 @@ module "argocd_repo_irsa" {
   service_account_name = "argocd-repo-server"
   oidc_provider_url    = module.eks.oidc_provider
   oidc_provider_arn    = module.eks.oidc_provider_arn
-  policy_arns          = ["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"]}
+  policy_arns          = ["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"]
+}
